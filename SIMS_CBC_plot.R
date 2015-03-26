@@ -1,5 +1,11 @@
 # This script can make cycle-by-cycle plot from IMS 1280 asc file
 
+# Automatic installation of required packages
+required.packages <- c('Hmisc', 'xlsx')
+diff.packages <- !(required.packages %in% installed.packages()[,'Package'])
+new.packages <- required.packages[diff.packages]
+if(length(new.packages)) install.packages(new.packages)
+
 # Absolute path for a directory containing SIMS .asc files
 data.dir <- '/path/to/your/SIMS_data_directory'
 
@@ -11,8 +17,8 @@ output.path <- ''
 # select element (oxygen, carbon)
 # C and O are also acceptable
 # TODO (Kouki): auto-detect
-# element <- 'oxygen'
-element <- 'carbon'
+element <- 'oxygen'
+# element <- 'carbon'
 
 
 ######################
@@ -30,10 +36,10 @@ data.headers <- c('delta',
                   'hydride.ratio')
 
 if (element == 'carbon' | element == 'C') { # CARBON
-  mass1         <- 'cps.V1'  # 12C
-  mass2         <- 'cps.V2'  # 13C
-  hydride       <- 'cps.V3'  # 13C1H
-  hydride.ratio <- 'cps.V2'  # 13C1H/13C
+  mass1         <- '12C'     # 12C
+  mass2         <- '13C'     # 13C
+  hydride       <- '13C 1H'  # 13C1H
+  hydride.ratio <- mass2     # denominator for hydride ratio
   deltaScale    <- PDBC
 
   u.pri <- list('plot'  = 'delta',  # upper left
@@ -42,7 +48,8 @@ if (element == 'carbon' | element == 'C') { # CARBON
                 'color' = 'red2')
   u.sec <- list('plot'  = 'hydride.ratio',  # upper right
                 'unit'  = 'cps/cps',
-                'label' = expression(paste(''^{13}*C^{1}*H/''^{13}*C, " [cps/cps]")),
+                'label' = expression(paste(''^{13}*C^{1}*H/''^{13}*C,
+                                     " [cps/cps]")),
                 'color' = 'blue2')
   l.pri <- list('plot'  = 'mass2',  # lower left
                 'unit'  = 'cps',
@@ -54,10 +61,10 @@ if (element == 'carbon' | element == 'C') { # CARBON
                 'color' = 'darkorange')
 
 } else if (element == 'oxygen' | element == 'O') {  # OXYGEN
-  mass1         <- 'cps.V1'  # 16O
-  mass2         <- 'cps.V3'  # 18O
-  hydride       <- 'cps.V2'  # 16O1H
-  hydride.ratio <- 'cps.V1'  # 16O1H/16O
+  mass1         <- '16O'     # 16O
+  mass2         <- '18O'     # 18O
+  hydride       <- '16O 1H'  # 16O1H
+  hydride.ratio <- mass1     # denominator for hydride ratio
   deltaScale    <- VSMOW
 
   u.pri <- list('plot'  = 'delta',  # upper left
@@ -66,7 +73,8 @@ if (element == 'carbon' | element == 'C') { # CARBON
                 'color' = 'red2')
   u.sec <- list('plot'  = 'hydride.ratio',  # upper right
                 'unit'  = 'cps/cps',
-                'label' = expression(paste(''^{16}*O^{1}*H/''^{16}*O, " [cps/cps]")),
+                'label' = expression(paste(''^{16}*O^{1}*H/''^{16}*O,
+                                     " [cps/cps]")),
                 'color' = 'blue2')
   l.pri <- list('plot'  = 'mass1',  # lower left
                 'unit'  = 'cps',
@@ -79,7 +87,7 @@ if (element == 'carbon' | element == 'C') { # CARBON
 }
 
 source('./ims1280_asc_parser.R')
-source('./plot_cycle_by_cycle.R')
+source('./cycle_by_cycle_plotter.R')
 
 ##################################################
 # MAIN ROUTINE
@@ -95,7 +103,8 @@ if (output.path == '') {
 ascfiles <- GetAscFileList(data.dir)  # get list of .asc files
 comments <- GetCommentList(data.dir)  # get comments from Spreadsheet
 
-pdf(output.path, paper = 'us', width = 0, height = 0, encoding = 'MacRoman')  # set output device
+pdf(output.path, paper = 'us', width = 0,
+    height = 0, encoding = 'MacRoman')  # set output device
 par(mfrow = c(2, 1), oma = c(0, 0, 0, 0))  # set print margins
 
 # ============
@@ -107,15 +116,16 @@ for (filename in ascfiles) {
 
   comment <- ifelse(!is.null(comments),
                     as.character(comments[basename(filename),]),
-                    asc.data$comment)
+                    asc.data$description)
 
   print(paste(basename(filename), ':', comment))
 
-  d <- data.frame(delta = ((asc.data[[mass2]] / asc.data[[mass1]]) / deltaScale - 1) * 1000,
-                  mass1 = asc.data[[mass1]],
-                  mass2 = asc.data[[mass2]],
-                  hydride = asc.data[[hydride]],
-                  hydride.ratio = asc.data[[hydride]] / asc.data[[hydride.ratio]])
+  d <- data.frame(delta = GetDelta(asc.data$cps[[mass1]],
+                  asc.data$cps[[mass2]], deltaScale),
+                  mass1 = asc.data$cps[[mass1]],
+                  mass2 = asc.data$cps[[mass2]],
+                  hydride = asc.data$cps[[hydride]],
+                  hydride.ratio = asc.data$cps[[hydride]] / asc.data$cps[[hydride.ratio]])
 
   margin <- 0.15 * c(-1, 1) # set 15% margin on Y-axes for legends
 
@@ -124,7 +134,7 @@ for (filename in ascfiles) {
     tmp <- d[[i]]
     tmp.range <- range(tmp) + margin * abs(diff(range(tmp, na.rm = TRUE)))
     stat$ave[[i]]    <- mean(tmp, na.rm = TRUE)
-    stat$se[[i]]     <- sd(tmp, na.rm = TRUE) / sqrt(length(tmp)) * 2
+    stat$se[[i]]     <- 2 * sd(tmp, na.rm = TRUE) / sqrt(length(tmp))
     stat$limits[[i]] <- tmp.range  # c(min, max)
   }
 
@@ -150,7 +160,7 @@ for (filename in ascfiles) {
   par(mar = c(5, 5.5, 0, 5.5))
   PlotPrimaryY(d, l.pri, stat, x.minor.ticks = TRUE)
   PlotSecondaryY(d, l.sec, stat)
-  #  legend for lower plot
+  # legend for lower plot
   legend('bottomleft', legend = c(l.pri$label, l.sec$label),
          col = c(l.pri$color, l.sec$color),
          pch = c(15, 1), ncol = 2, bg = 'white')

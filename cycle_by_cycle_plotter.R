@@ -1,6 +1,9 @@
 PlotDataByCycle <- function(data, cycle, ylim, color, pch = 15, axes = TRUE) {
   plot(data,
-       xlim = c(1, cycle), ylim = ylim, col = color, pch = pch, axes = axes,
+       xlim = c(1, cycle), 
+       ylim = ylim, 
+       col = color, pch = pch, 
+       axes = axes,
        main = '',
        type = 'b', lty = 1, cex = 0.9,
        xlab = '', ylab = '', yaxt = 'n', xaxt = 'n')
@@ -32,7 +35,8 @@ PlotPrimaryY <- function(data, target, stat, x.minor.ticks = FALSE) {
   abline(h = average, lwd = 0.5, col = color, lty = 3)
   # text of average and 2SE
   mtext(paste0(format(round(average, 2), nsmall = 2), ' \u00B1 ',
-        format(round(stat$se[[Y]], 2), nsmall = 2), ' [', target$unit, '] (2SE)'),
+        format(round(stat$se[[Y]], 2), nsmall = 2),
+        ' [', target$unit, '] (2SE)'),
         side = 3, padj = 1.7, adj = 0.98, col = color, cex = 0.9)
 }
 
@@ -60,7 +64,7 @@ PlotSecondaryY <- function(data, target, stat) {
 }
 
 AddTitle <- function(title, subtitle) {
-  mtext(paste('(', basename(subtitle), ')', sep = '), 3, padj = -0.5)
+  mtext(paste('(', basename(subtitle), ')'), 3, padj = -0.5)
   title(main=title)
 }
 
