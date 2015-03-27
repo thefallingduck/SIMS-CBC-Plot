@@ -5,15 +5,20 @@ ParseAscFile return all parsed parameters as a named list
 ```r
 d <- ParseAscFile(asc.file.path)
 
-time.posix       <- d$date.time[['posix']]
-chamber.pressure <- d$params[['Sec.Anal.pressure (mb)']
+# comment
+comment <- d$description
+
+# get posix time of anaysis
+time.posix <- d$date.time[['posix']]
+
+# get analysis chamber pressure
+chamber.pressure <- d$params[['Sec.Anal.pressure (mb)']]
+
+# get cps data for thired cycle of "mass1"
 cps.mass1.cycle3 <- d$cps[3, 'mass1']
 ```   
 
-## Accessing to named list
-Examples:
-
-
+## Names for returned list by ParseAscFile()
 ### $date.time
 Date and time of analysis (*named list*)
 
@@ -22,23 +27,22 @@ Date and time of analysis (*named list*)
 - **posix**: posix object (e.g. 1400234234)
 
 ### $file.names
-s file and condition file names (*named list*)
+Acquisition and condition file names (*named list*)
 
 - **acquisition**: .ais file (binary file)
 - **condition**: .dis file
 
 ### $description
-comment for the analysis spot (*string*)
+Comment for the analysis spot (*string*)
 
 ### $position
 x-y coordinates of SIMS stage (*named list*)
 
-- **x**: x coordinates
-- **y**: y coordinates
+- **x**: x-coordinates
+- **y**: y-coordinates
 
 ### $params
-Various parameters for the analysis (*named list*)
-Parameters from the sections 'ANALYTICAL PARAMETERS', 'CORRECTION FACTORS FOR RATIOS COMPUTATION' and 'ACQUISITION CONTROL PARAMETERS' in .asc file
+Various parameters for the analysis (*named list*).
 
 - **SAMPLE NAME** : sample name
 - **SAMPLE HV (v)** : applied high voltage to the sample
@@ -87,7 +91,7 @@ Parameters from the sections 'ANALYTICAL PARAMETERS', 'CORRECTION FACTORS FOR RA
 Detector paramers (*data frame*)
 
 |         |Yield|Bkg(c/s)|DT(ns)|Slit Size(um)|EM HV|Threshold|Quad multi|ESA out|ESA in|Rep a|Rep b|
-|---------|-----|--------|------|-------------|-----|---------|----------|-------|------|-----|-----|
+|:-------:|:---:|:------:|:----:|:-----------:|:---:|:-------:|:--------:|:-----:|:----:|:---:|:---:|
 | **L'2** |[1,1]|[1,2]|[1,3]|[1,4]|[1,5]|[1,6]|[1,7]|[1,8]|[1,9]|[1,10]|[1,11]|
 | **L2**  |[2,1]|[2,2]|[2,3]|[2,4]|[2,5]|[2,6]|[2,7]|[2,8]|[2,9]|[2,10]|[2,11]|
 | **L1**  |[3,1]|[3,2]|[3,3]|[3,4]|[3,5]|[3,6]|[3,7]|[3,8]|[3,9]|[3,10]|[3,11]|
@@ -104,11 +108,12 @@ Detector paramers (*data frame*)
 Statistics of the analysis (*data frame*)
 
 |        |Mean value|Std. dev. (STDE)|Std Err. mean(%)|Poisson (%)|Rejected #|Integrated mean|Delta Value(permil)|QSA corrected Mean|
-|--------|----------|----------------|----------------|-----------|----------|---------------|-------------------|------------------|
+|:------:|:--------:|:--------------:|:--------------:|:---------:|:--------:|:-------------:|:-----------------:|:----------------:|
 | **R0** |[1,1]|  	[1,2]|  	[1,3]|  	[1,4]|  	[1,5]|  	[1,6]|  	[1,7]|  	[1,8]|
 | **R1** |[2,1]|  	[2,2]|  	[2,3]|  	[2,4]|  	[2,5]|  	[2,6]|  	[2,7]|  	[2,8]|
 | **R2** |[3,1]|  	[3,2]|  	[3,3]|  	[3,4]|  	[3,5]|  	[3,6]|  	[3,7]|  	[3,8]|
-| **RX** |[X+1,1]|	[X+1,2]|	[X+1,3]|	[X+1,4]|	[X+1,5]|	[X+1,6]|	[X+1,7]|	[X+1,8]|
+| ...    |[...,1]|	[...,2]|	[...,3]|	[...,4]|	[...,5]|	[...,6]|	[...,7]|	[...,8]|
+| **RX** |[1+X,1]|	[1+X,2]|	[1+X,3]|	[1+X,4]|	[1+X,5]|	[1+X,6]|	[1+X,7]|	[1+X,8]|
 
 ### $beam.centering
 Beam centering parameters (*named list*)
@@ -116,7 +121,7 @@ Beam centering parameters (*named list*)
 If beam centering wasn't carried out, return FALSE
 
 |                        |Selected|Scan-Range|resultX|resultY|
-|------------------------|--------|----------|-------|-------|
+|:----------------------:|:------:|:--------:|:-----:|:-----:|
 | **Field App (DT1)**    |[1,1]|[1,2]|[1,3]|[1,4]|
 | **Entrance Slits**     |[2,1]|[2,2]|[2,3]|[2,4]|
 | **Contrast Apperture** |[3,1]|[3,2]|[3,3]|[3,4]|
@@ -126,7 +131,7 @@ Definitions of isotope ratios (*named list*)
 - **R0**: ratio definition for R0
 - **R1**: ratio definition for R1
 - **R2**: ratio definition for R2
-* …
+- ...
 - **Rx**: ratio definition for Rx
 
 ### $primary.beam
@@ -145,16 +150,12 @@ Total cycle number (*numeric*)
 ### $cps
 Count par second data for each cycle with time (s) from beginning (*data frame*)
 
-(e.g. oxygen 2 isotope analysis with OH)
-
-|   | N.Block | N.Cycle | *mass1* | … | *massZ*  | Time |
-| - | ------- | ------- | ------- | -- | -------  | ---- |
-| 1 | [1,1]  | [1,2]  | [1,3]  | … | [1,2+Z] | [1,3+Z]|
-| 2 | [2,1]  | [2,2]  | [2,3]  | … | [2,2+Z] | [2,3+Z]|
-| 3 | [3,1]  | [3,2]  | [3,3]  | … | [3,2+Z] | [3,3+Z]|
-| 4 | [4,1]  | [4,2]  | [4,3]  | … | [4,2+Z] | [4,3+Z]|
-| 5 | [5,1]  | [5,2]  | [5,3]  | … | [5,2+Z] | [5,3+Z]|
-|…| […,1] | […,2]  | […,3]| … |[…,2+Z] | […,3+Z]|
-| x | [x,1]  | [x,2]  | [x,3]  | … |[x,2+Z] | [x,3+Z]|
-
-
+|     | N.Block | N.Cycle | *mass1* | ...  | *massZ*  | Time |
+|:---:|:-------:|:-------:|:-------:|:---:|:--------:|:----:|
+| 1   | [1,1]   | [1,2]   | [1,3]   | ...  | [1,2+Z]  |[1,3+Z]|
+| 2   | [2,1]   | [2,2]   | [2,3]   | ...  | [2,2+Z]  |[2,3+Z]|
+| 3   | [3,1]   | [3,2]   | [3,3]   | ...  | [3,2+Z]  |[3,3+Z]|
+| 4   | [4,1]   | [4,2]   | [4,3]   | ...  | [4,2+Z]  |[4,3+Z]|
+| 5   | [5,1]   | [5,2]   | [5,3]   | ...  | [5,2+Z]  |[5,3+Z]|
+|...  | [...,1]  | [...,2] | [...,3]   | ...  |[...,2+Z] | [...,3+Z]|
+| x   | [x,1]   | [x,2]  | [x,3]    | ... |[x,2+Z] | [x,3+Z]|
