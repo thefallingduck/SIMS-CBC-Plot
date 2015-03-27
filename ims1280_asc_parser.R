@@ -43,7 +43,8 @@ ParseAscFile <- function(ascfile) {
   # Parse SIMS .asc file
   o <- list()
   line.sep.data <- GetLineSepData(ascfile)
-
+  
+  o$analysis.name<-ascfile
   o$date.time   <- GetDateTime(line.sep.data)
   o$file.names  <- GetFileNames(line.sep.data)
   o$description <- GetComment(line.sep.data)
